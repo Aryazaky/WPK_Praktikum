@@ -207,7 +207,7 @@ public:
     void Run(double a, double b, int n) { method->run(a, b, n); }
     string GetMethodName() { return method->GetName(); }
     void Print() { method->PrintTable(); }
-    double GetAverageOf(string list_name) { method->GetAverageValOf(list_name); }
+    double GetAverageOf(string list_name) { return method->GetAverageValOf(list_name); }
 };
 
 // -------------------------------------------------------------------
