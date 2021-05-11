@@ -109,6 +109,7 @@ public:
 };
 class Method {
 protected:
+    string name;
     VectorD vec;
     Function* func;
     bool isFilled;
@@ -117,7 +118,7 @@ protected:
         return abs(CalculateDifference(x, delta_x) - (func->Fx(x + delta_x) - func->Fx(x - delta_x)) / delta_x / 2);
     }
 public:
-    Method(Function& function, int vec_size) : func(&function), vec(vec_size), isFilled(false) { }
+    Method(string _name, Function& function, int vec_size) : name(_name), func(&function), vec(vec_size), isFilled(false) { }
     void ChangeFunction(Function& new_function) { func = &new_function; }
     virtual void PrintTable() {
         if (!isFilled) {
@@ -126,17 +127,18 @@ public:
         }
         cout << "\nResult Table:\n";
         for (int i = 0; i < vec.GetSize(); i++) {
-            cout << vec.GetVecName(i) << "\t";
+            cout << vec.GetVecName(i) << "\t\t";
         }
         cout << endl;
         for (int i = 0; i < vec.GetSize(0); i++) {
             for (int o = 0; o < vec.GetSize(); o++) {
-                cout << vec.Get(o)[i] << "\t";
+                cout << vec.Get(o)[i] << "\t\t";
             }
             cout << endl;
         }
         cout << endl;
     }
+    string GetName() { return name; }
     virtual void run(double x) { cout << "[ERROR] Not implemented\n"; }
     virtual void run(double a, double b, double h) {
         if (b < a) {
@@ -147,19 +149,6 @@ public:
             cout << "H must be more than 0\n";
             return;
         }
-        run(a, b, floor((b - a) / h));
-    }
-    virtual void run(double a, double b, int n) {
-        if (b < a) {
-            cout << "B must be larger than A\n";
-            return;
-        }
-        if (n < 1) {
-            cout << "N must be at least 1\n";
-            return;
-        }
-
-        double h = (b - a) / n;
 
         vec.Clear();
         vec.Resize(5);
@@ -167,7 +156,7 @@ public:
         // X; F(x); F'(x); F'eksak; error;
 
         // Copy x, f(x), dan f'(x) ke tabel
-        for (int i = 0; i < n + 1; i++) {
+        for (int i = 0; i < floor((b - a) / h) + 1; i++) {
             double x = a + (h * i);
             vec.Push(x, 0, "X"); // 0 itu vector X
             vec.Push(func->Fx(x), 1, "F(X)"); // 1 itu vector F(X)
@@ -176,6 +165,13 @@ public:
             vec.Push(ErrorValue(x, h), 4, "error");
             isFilled = true;
         }
+    }
+    virtual void run(double a, double b, int n) {
+        if (n < 1) {
+            cout << "N must be at least 1\n";
+            return;
+        }
+        run(a, b, (b - a) / n);
     }
     virtual void run(double a, double b, double h, int n) { cout << "[ERROR] Not implemented\n"; }
 };
@@ -186,6 +182,7 @@ public:
     void SetMethod(Method& _method) { method = &_method; }
     void Run(double a, double b, double h) { method->run(a, b, h); }
     void Run(double a, double b, int n) { method->run(a, b, n); }
+    string GetMethodName() { return method->GetName(); }
     void Print() { method->PrintTable(); }
 };
 
@@ -220,7 +217,7 @@ class ForwardNumericalDifferentiation : public Method {
         return (func->Fx(x + delta_x) - func->Fx(x)) / delta_x;
     }
 public:
-    ForwardNumericalDifferentiation(Function& function) : Method(function, 5) {}
+    ForwardNumericalDifferentiation(Function& function) : Method("ForwardNumericalDifferentiation", function, 5) {}
 };
 
 class MiddleNumericalDifferentiation : public Method {
@@ -228,7 +225,7 @@ class MiddleNumericalDifferentiation : public Method {
         return (func->Fx(x + delta_x) - func->Fx(x - delta_x)) / delta_x / 2;
     }
 public:
-    MiddleNumericalDifferentiation(Function& function) : Method(function, 5) {}
+    MiddleNumericalDifferentiation(Function& function) : Method("MiddleNumericalDifferentiation", function, 5) {}
 };
 
 class BackwardNumericalDifferentiation : public Method {
@@ -236,22 +233,29 @@ class BackwardNumericalDifferentiation : public Method {
         return (func->Fx(x) - func->Fx(x - delta_x)) / delta_x;
     }
 public:
-    BackwardNumericalDifferentiation(Function& function) : Method(function, 5) {}
+    BackwardNumericalDifferentiation(Function& function) : Method("BackwardNumericalDifferentiation", function, 5) {}
 };
 
 int main()
 {
     cout << "Hello World!\n";
+
     Function* fx;
     fx = new FX_expmXsin2Xp1();
+
     ForwardNumericalDifferentiation forwardNumDif(*fx);
     MiddleNumericalDifferentiation middleNumDif(*fx);
     BackwardNumericalDifferentiation backwardNumDif(*fx);
 
     Program program(forwardNumDif);
 
-    program.Run(0, 1, 10);
-    program.Print();
+    double a = 0, b = 1;
+    vector<double> h_list = { 0.1, 0.01, 0.001, 0.0001 };
+    for (const auto& h : h_list) {
+        cout << "\n[Setup] Method used=" << program.GetMethodName() << "; Step(h)=" << h << "; interval=" << a << "-" << b << endl;
+        program.Run(a, b, h);
+        program.Print();
+    }
 
     delete(fx);
 }
