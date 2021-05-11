@@ -59,6 +59,15 @@ public:
             PopBackVec(vec.size() - new_size);
         }
     }
+    int IndexOf(string index_name) {
+        for (int i = 0; i < vec_names.size(); i++) {
+            if (vec_names[i] == index_name) {
+                return i;
+            }
+        }
+        cout << "[ERROR] Index with name \"" << index_name << "\" not found\n";
+        return -1;
+    }
     // Returns a copy of the whole 2D vector
     const vector<vector<double>> Get() { return vec; }
     int GetSize() { return vec.size(); }
@@ -102,6 +111,14 @@ public:
     string GetVecName(int index) {
         return vec_names[index];
     }
+    double GetAverageValueOf(int index) {
+        double result = 0;
+        for (const auto& d : vec[index]) {
+            result += d;
+        }
+        result /= vec[index].size();
+        return result;
+    }
 };
 class Function {
 public: 
@@ -139,6 +156,12 @@ public:
         cout << endl;
     }
     string GetName() { return name; }
+    double GetAverageValOf(string list_name) {
+        if (!isFilled) {
+            return -1;
+        }
+        return vec.GetAverageValueOf(vec.IndexOf(list_name));
+    }
     virtual void run(double x) { cout << "[ERROR] Not implemented\n"; }
     virtual void run(double a, double b, double h) {
         if (b < a) {
@@ -161,7 +184,7 @@ public:
             vec.Push(x, 0, "X"); // 0 itu vector X
             vec.Push(func->Fx(x), 1, "F(X)"); // 1 itu vector F(X)
             vec.Push(CalculateDifference(x, h), 2, "F'(X)");
-            vec.Push((func->Fx(x + h) - func->Fx(x - h)) / h / 2, 3, "F'eksak(X)");
+            vec.Push((func->Fx(x + h) - func->Fx(x - h)) / h / 2, 3, "F'eksak");
             vec.Push(ErrorValue(x, h), 4, "error");
             isFilled = true;
         }
@@ -184,6 +207,7 @@ public:
     void Run(double a, double b, int n) { method->run(a, b, n); }
     string GetMethodName() { return method->GetName(); }
     void Print() { method->PrintTable(); }
+    double GetAverageOf(string list_name) { method->GetAverageValOf(list_name); }
 };
 
 // -------------------------------------------------------------------
@@ -249,12 +273,15 @@ int main()
 
     Program program(forwardNumDif);
 
-    double a = 0, b = 1;
+    double a = 0, b = 0.1;
     vector<double> h_list = { 0.1, 0.01, 0.001, 0.0001 };
     for (const auto& h : h_list) {
-        cout << "\n[Setup] Method used=" << program.GetMethodName() << "; Step(h)=" << h << "; interval=" << a << "-" << b << endl;
+        cout << "---------------------------------------------------"
+            << "\n[Setup] Method used=" << program.GetMethodName() << "; Step(h)=" << h << "; interval=" << a << "-" << b << endl
+            << "---------------------------------------------------";
         program.Run(a, b, h);
         program.Print();
+        cout << "Average Error = " << program.GetAverageOf("error") << endl;
     }
 
     delete(fx);
